@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TokenFactory</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">K</span>
+      <div>
+        <h1>klever <span class="muted">·</span> TokenFactory</h1>
+        <div class="muted small" id="contract-line">carregando…</div>
+      </div>
+    </div>
+    <div class="status" id="status">
+      <span class="pill" id="pill-network">rede</span>
+      <span class="pill" id="pill-mode">modo</span>
+      <span class="pill" id="pill-paused">estado</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Sem CONTRACT_ADDRESS no .env: oferece o deploy pela página -->
+    <section class="card wide deploy" id="card-deploy" hidden>
+      <div class="card-head"><h2>Nenhum TokenFactory configurado</h2></div>
+      <p class="muted">
+        O backend subiu sem <code>CONTRACT_ADDRESS</code>. Faça o deploy do contrato com a carteira do
+        backend: o endereço novo passa a ser usado na hora e é gravado no <code>.env</code>.
+      </p>
+      <div class="row">
+        <button type="button" id="btn-deploy">Fazer deploy do contrato</button>
+        <span class="muted small" id="deploy-hint"></span>
+      </div>
+    </section>
+
+    <!-- Coluna esquerda: lista -->
+    <section class="card" id="card-list">
+      <div class="card-head">
+        <h2>Tokens emitidos</h2>
+        <span class="muted small" id="list-count"></span>
+      </div>
+      <form id="form-list" class="row">
+        <input id="list-creator" type="text" placeholder="klv1… (criador)" spellcheck="false" />
+        <button type="submit" class="secondary">Listar</button>
+      </form>
+      <ul class="token-list" id="token-list">
+        <li class="muted">Nenhum token carregado.</li>
+      </ul>
+      <div class="row end">
+        <button type="button" class="ghost" id="btn-prev" disabled>‹ anteriores</button>
+        <button type="button" class="ghost" id="btn-next" disabled>próximos ›</button>
+      </div>
+    </section>
+
+    <!-- Coluna central: detalhes + ações no token -->
+    <section class="card" id="card-token">
+      <div class="card-head">
+        <h2 id="token-title">Token</h2>
+        <a id="token-explorer" class="small" target="_blank" rel="noopener" hidden>ver no explorer ↗</a>
+      </div>
+      <div class="row">
+        <input id="token-lookup" type="text" placeholder="TICKER-XXXX" spellcheck="false" />
+        <button type="button" class="secondary" id="btn-lookup">Consultar</button>
+      </div>
+      <div id="token-empty" class="muted">Selecione um token na lista ou consulte um id.</div>
+      <div id="token-details" hidden>
+        <dl class="grid" id="token-fields"></dl>
+
+        <details class="actions" open>
+          <summary>Mintar</summary>
+          <form id="form-mint" class="row">
+            <input id="mint-amount" type="text" inputmode="decimal" placeholder="quantidade (ex: 100)" required />
+            <input id="mint-nonce" type="number" min="0" value="0" placeholder="nonce" title="SFT: 0 cria uma edição nova; N adiciona quantidade à edição N" class="narrow" hidden />
+            <button type="submit">Mint</button>
+          </form>
+        </details>
+
+        <details class="actions">
+          <summary>Queimar</summary>
+          <form id="form-burn" class="row">
+            <input id="burn-amount" type="text" inputmode="decimal" placeholder="quantidade (ex: 10)" required />
+            <input id="burn-nonce" type="number" min="0" value="0" placeholder="nonce" title="nonce (NFT/SFT)" class="narrow" hidden />
+            <button type="submit" class="danger">Burn</button>
+          </form>
+          <p class="muted small">Queima tokens da carteira do backend, enviados junto com a chamada.</p>
+        </details>
+
+        <details class="actions">
+          <summary>Transferir propriedade</summary>
+          <form id="form-transfer" class="row">
+            <input id="transfer-owner" type="text" placeholder="klv1… (novo dono)" spellcheck="false" required />
+            <button type="submit" class="danger">Transferir</button>
+          </form>
+          <p class="muted small">Irreversível: o contrato deixa de controlar o ativo.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- Coluna direita: emitir + admin -->
+    <div class="stack">
+      <section class="card">
+        <div class="card-head"><h2>Emitir token</h2></div>
+        <form id="form-issue" class="form-grid">
+          <label>Tipo
+            <select id="issue-type">
+              <option value="Fungible">Fungível</option>
+              <option value="NFT">NFT</option>
+              <option value="SemiFungible">Semi-fungível</option>
+            </select>
+          </label>
+          <label>Nome
+            <input id="issue-name" type="text" maxlength="32" pattern="[A-Za-z0-9]+" placeholder="DemoToken" required />
+          </label>
+          <label>Ticker
+            <input id="issue-ticker" type="text" maxlength="10" pattern="[A-Za-z0-9]+" placeholder="DEMO" required />
+          </label>
+          <label>Precisão
+            <input id="issue-precision" type="number" min="0" max="18" value="6" required />
+          </label>
+          <label>Supply inicial
+            <input id="issue-initial" type="text" inputmode="decimal" placeholder="1000" />
+          </label>
+          <label>Supply máximo
+            <input id="issue-max" type="text" inputmode="decimal" placeholder="0 = ilimitado" />
+          </label>
+          <button type="submit" class="full">Emitir</button>
+        </form>
+        <p class="muted small">Nome e ticker só com letras e dígitos: o nó rejeita espaços.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Admin <span class="muted small">(only_owner)</span></h2></div>
+        <div class="row">
+          <button type="button" class="secondary" id="btn-pause">Pausar</button>
+          <button type="button" class="secondary" id="btn-unpause">Despausar</button>
+        </div>
+        <form id="form-name" class="row">
+          <input id="admin-name" type="text" placeholder="novo nome do contrato" required />
+          <button type="submit" class="secondary">Renomear</button>
+        </form>
+      </section>
+    </div>
+
+    <!-- Rodapé: atividade -->
+    <section class="card wide">
+      <div class="card-head">
+        <h2>Atividade</h2>
+        <button type="button" class="ghost small" id="btn-clear">limpar</button>
+      </div>
+      <ol class="activity" id="activity">
+        <li class="muted">Nenhuma transação ainda.</li>
+      </ol>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
