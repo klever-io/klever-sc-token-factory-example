@@ -1,8 +1,10 @@
 kleverchain.workspace.json
+token-factory.imports.json
+token-factory.kleversc.json
 *.pem
 */node_modules
 */.env
 */package-lock.json
-*/output
+
 */target
 */dist/
