@@ -1,0 +1,8 @@
+kleverchain.workspace.json
+*.pem
+*/node_modules
+*/.env
+*/package-lock.json
+*/output
+*/target
+*/dist/
