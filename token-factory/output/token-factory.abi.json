@@ -1,0 +1,360 @@
+{
+    "buildInfo": {
+        "rustc": {
+            "version": "1.90.0",
+            "commitHash": "1159e78c4747b02ef996e55082b704c09b970588",
+            "commitDate": "2025-09-14",
+            "channel": "Stable",
+            "short": "rustc 1.90.0 (1159e78c4 2025-09-14)"
+        },
+        "contractCrate": {
+            "name": "token-factory",
+            "version": "0.0.0"
+        },
+        "framework": {
+            "name": "klever-sc",
+            "version": "0.45.1"
+        }
+    },
+    "docs": [
+        "TokenFactory — Token issuance contract for Klever.",
+        "",
+        "Allows anyone to issue new KDA tokens (Fungible, NFT, SemiFungible) on Klever.",
+        "The contract stays the on-chain owner of the created asset, so the original",
+        "creator can keep minting/burning through it — or take the ownership over."
+    ],
+    "name": "TokenFactory",
+    "constructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "upgradeConstructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "docs": [
+                "Issue a new KDA token on Klever.",
+                "",
+                "* `asset_type` — 0=Fungible, 1=NFT, 2=SemiFungible",
+                "* `name` — token display name",
+                "* `ticker` — token ticker symbol",
+                "* `precision` — decimal places (ignored for NFT, forced to 0)",
+                "* `initial_supply` — initial mint (ignored for NFT/SFT, forced to 0)",
+                "* `max_supply` — maximum supply (ignored for NFT/SFT, forced to 0)"
+            ],
+            "name": "issue",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "asset_type",
+                    "type": "u8"
+                },
+                {
+                    "name": "name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "ticker",
+                    "type": "bytes"
+                },
+                {
+                    "name": "precision",
+                    "type": "u32"
+                },
+                {
+                    "name": "initial_supply",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "max_supply",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Mint additional tokens (creator only).",
+                "",
+                "* `token_id` — token to mint",
+                "* `nonce` — 0 for fungible, specific nonce for SFT",
+                "* `amount` — amount to mint"
+            ],
+            "name": "mintToken",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "nonce",
+                    "type": "u64"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Burn tokens sent by the creator."
+            ],
+            "name": "burnToken",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Transfer on-chain asset ownership to a new address (creator only).",
+                "This is irreversible — the contract loses control of the token."
+            ],
+            "name": "transferTokenOwnership",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "new_owner",
+                    "type": "Address"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "changeContractName",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "new_name",
+                    "type": "bytes"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "pause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "unpause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "isPaused",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "getTotalIssued",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getTokensByCreator",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "creator",
+                    "type": "Address"
+                },
+                {
+                    "name": "offset",
+                    "type": "u32"
+                },
+                {
+                    "name": "limit",
+                    "type": "u32"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getCreatorTokenCount",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "creator",
+                    "type": "Address"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "getTokenCreator",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "Address"
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "identifier": "tokenIssued",
+            "inputs": [
+                {
+                    "name": "caller",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "asset_type",
+                    "type": "u8",
+                    "indexed": true
+                },
+                {
+                    "name": "name",
+                    "type": "bytes",
+                    "indexed": true
+                },
+                {
+                    "name": "ticker",
+                    "type": "bytes",
+                    "indexed": true
+                },
+                {
+                    "name": "initial_supply",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "precision",
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "identifier": "pauseChanged",
+            "inputs": [
+                {
+                    "name": "paused",
+                    "type": "bool",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "tokenMint",
+            "inputs": [
+                {
+                    "name": "creator",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "nonce",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "identifier": "tokenBurn",
+            "inputs": [
+                {
+                    "name": "creator",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "nonce",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "identifier": "tokenOwnershipTransferred",
+            "inputs": [
+                {
+                    "name": "creator",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "new_owner",
+                    "type": "Address",
+                    "indexed": true
+                }
+            ]
+        }
+    ],
+    "kdaAttributes": [],
+    "types": {}
+}
