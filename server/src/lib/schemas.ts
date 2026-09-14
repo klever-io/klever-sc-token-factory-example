@@ -10,9 +10,13 @@ export const tokenId = z
   .string()
   .regex(/^[A-Z0-9]{2,20}-[A-Z0-9]{4,8}$/, 'token id inválido (esperado TICKER-XXXX)')
 
-/** Quantidades trafegam como string em unidades mínimas, para não perder precisão. */
+/**
+ * Quantidades trafegam só como string em unidades mínimas. Números JSON acima de
+ * Number.MAX_SAFE_INTEGER já chegam arredondados pelo JSON.parse, então são recusados.
+ */
 export const amount = z
-  .union([z.string().regex(/^\d+$/, 'quantidade deve ser um inteiro em unidades mínimas'), z.number().int().nonnegative()])
+  .string({ error: 'quantidade deve ser uma string decimal em unidades mínimas' })
+  .regex(/^\d+$/, 'quantidade deve ser um inteiro em unidades mínimas')
   .transform((v) => BigInt(v))
 
 export const nonce = z.coerce.number().int().nonnegative().default(0)

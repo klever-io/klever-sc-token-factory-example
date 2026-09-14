@@ -6,7 +6,7 @@ async function main(): Promise<void> {
   const { network, contractAddress, wallet } = await initKlever()
 
   const app = createApp()
-  const server = app.listen(config.PORT, () => {
+  const server = app.listen(config.PORT, config.HOST, () => {
     console.log(`
   TokenFactory backend
   ────────────────────────────────────────────────
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
   node       ${network.config.node}
   contrato   ${contractAddress ?? '— não configurado: faça o deploy pela página —'}
   signer     ${wallet?.address ?? '— modo somente-leitura —'}
-  http       http://localhost:${config.PORT}
+  http       http://${config.HOST}:${config.PORT}
 `)
   })
 

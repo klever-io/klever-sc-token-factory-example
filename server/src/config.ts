@@ -10,6 +10,11 @@ import { z } from 'zod'
  */
 const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
+  /**
+   * Interface de escuta. O default é loopback: o servidor assina transações com
+   * a carteira e não tem autenticação, então não deve ficar exposto na rede.
+   */
+  HOST: z.string().default('127.0.0.1'),
 
   /** Rede Klever: mainnet | testnet | devnet | local */
   KLEVER_NETWORK: z.enum(['mainnet', 'testnet', 'devnet', 'local']).default('testnet'),
