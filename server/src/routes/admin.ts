@@ -6,10 +6,10 @@ import { contractNameBody } from '../lib/schemas.js'
 import * as factory from '../services/token-factory.js'
 
 /**
- * Endpoints `#[only_owner]` do contrato.
+ * `#[only_owner]` endpoints of the contract.
  *
- * A chamada só passa se a carteira configurada em WALLET_PEM_PATH for a dona
- * do contrato; caso contrário a transação reverte on-chain.
+ * The call only goes through if the wallet configured in WALLET_PEM_PATH is the owner
+ * of the contract; otherwise the transaction reverts on-chain.
  */
 export const adminRouter: Router = Router()
 
@@ -34,7 +34,7 @@ adminRouter.post(
 adminRouter.post(
   '/name',
   asyncRoute(async (req, res) => {
-    const body = parse(contractNameBody, req.body, 'corpo da requisição')
+    const body = parse(contractNameBody, req.body, 'request body')
     const result = await factory.changeContractName(body.name, shouldWait(body.wait))
     res.json(jsonSafe({ ...factory.summarize(result), name: body.name }))
   }),

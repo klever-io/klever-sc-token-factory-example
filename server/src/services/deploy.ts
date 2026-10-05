@@ -13,11 +13,11 @@ export interface DeployResult {
   hash: string;
   status: "success";
   explorerUrl: string;
-  /** Se o endereço foi gravado no .env (falha na escrita não derruba o deploy). */
+  /** Whether the address was written to .env (a write failure does not abort the deploy). */
   persisted: boolean;
 }
 
-/** O wasm precisa existir para o deploy; sem build do contrato não há o que enviar. */
+/** The wasm must exist for the deploy; without a contract build there is nothing to send. */
 export function wasmPath(): string {
   return fromPackageRoot(config.WASM_PATH);
 }
@@ -32,7 +32,7 @@ function loadBytecode(): Uint8Array {
     return new Uint8Array(readFileSync(path));
   } catch (err) {
     throw unavailable(
-      `Não encontrei o wasm em ${path}. Rode o build do contrato (\`~/klever-sdk/ksc all build\`) ou ajuste WASM_PATH. Causa: ${
+      `Could not find the wasm at ${path}. Run the contract build (\`~/klever-sdk/ksc all build\`) or adjust WASM_PATH. Cause: ${
         err instanceof Error ? err.message : String(err)
       }`,
     );
@@ -40,22 +40,22 @@ function loadBytecode(): Uint8Array {
 }
 
 /**
- * Faz o deploy do TokenFactory com a carteira do backend e passa a usar o novo
- * endereço imediatamente. Usado pelo script `npm run deploy:contract` e por
+ * Deploys the TokenFactory with the backend wallet and starts using the new
+ * address immediately. Used by the `npm run deploy:contract` script and by
  * `POST /api/contract/deploy`.
  */
 export async function deployContract(): Promise<DeployResult> {
   const { provider, wallet, abi } = getKlever();
   if (!wallet) {
     throw unavailable(
-      "Servidor em modo somente-leitura: configure WALLET_PEM_PATH para fazer o deploy",
+      "Server in read-only mode: set WALLET_PEM_PATH to deploy",
     );
   }
 
   const bytecode = loadBytecode();
 
-  // Metadata do deploy: upgradeable permite `upgrade()` depois; payable é
-  // necessário porque `burnToken` recebe KDA.
+  // Deploy metadata: upgradeable allows `upgrade()` later; payable is
+  // required because `burnToken` receives KDA.
   const factory = new ContractFactory(abi, bytecode, wallet, {
     upgradeable: true,
     readable: true,
@@ -63,7 +63,7 @@ export async function deployContract(): Promise<DeployResult> {
     payableBySC: true,
   });
 
-  // O construtor `init()` do TokenFactory não recebe argumentos.
+  // The TokenFactory constructor `init()` takes no arguments.
   const deployed = await factory.deploy();
   const { hash } = (
     deployed as unknown as { deployTransaction: { hash: string } }
@@ -74,12 +74,12 @@ export async function deployContract(): Promise<DeployResult> {
   );
   if (!receipt) {
     throw new Error(
-      `Transação ${hash} não confirmou a tempo — confira no explorer`,
+      `Transaction ${hash} did not confirm in time — check the explorer`,
     );
   }
 
-  // O parser usa o tipo de recibo do pacote de contratos (com hash branded); a
-  // resposta do provider é estruturalmente compatível.
+  // The parser uses the receipt type from the contracts package (with branded hash); the
+  // provider response is structurally compatible.
   const address = ContractFactory.getDeployedAddress(
     receipt as unknown as Parameters<
       typeof ContractFactory.getDeployedAddress
@@ -98,10 +98,10 @@ export async function deployContract(): Promise<DeployResult> {
 }
 
 /**
- * Grava CONTRACT_ADDRESS no .env para o endereço sobreviver a um restart.
- * Substitui a linha existente (mesmo vazia) ou acrescenta ao final. Só é
- * chamado quando ainda não havia contrato configurado, então nunca sobrescreve
- * um endereço em uso.
+ * Writes CONTRACT_ADDRESS to .env so the address survives a restart.
+ * Replaces the existing line (even if empty) or appends at the end. Only
+ * called when no contract was configured yet, so it never overwrites
+ * an address in use.
  */
 export function persistContractAddress(address: string): boolean {
   const envPath = join(fromPackageRoot("."), ".env");
@@ -116,7 +116,7 @@ export function persistContractAddress(address: string): boolean {
     return true;
   } catch (err) {
     console.warn(
-      `[deploy] não consegui gravar ${line} em ${envPath}:`,
+      `[deploy] could not write ${line} to ${envPath}:`,
       err instanceof Error ? err.message : err,
     );
     return false;

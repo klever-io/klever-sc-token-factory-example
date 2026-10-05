@@ -2,7 +2,7 @@
   "name": "token-factory-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Backend Node.js que integra com o smart contract TokenFactory na Klever usando klever-connect",
+  "description": "Node.js backend that integrates with the TokenFactory smart contract on Klever using klever-connect",
   "type": "module",
   "engines": {
     "node": ">=20"

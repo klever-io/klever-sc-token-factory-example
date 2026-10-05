@@ -1,4 +1,4 @@
-/* Paleta Klever: fundo quase preto, magenta #AA33B5 como primária, cinza #8E8E91 para texto secundário. */
+/* Klever palette: near-black background, magenta #AA33B5 as primary, gray #8E8E91 for secondary text. */
 :root {
   --bg: #0f0e11;
   --bg-elevated: #131214;
@@ -79,7 +79,7 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 .wide { grid-column: 1 / -1; }
 .card.deploy { border-color: var(--accent-border); }
 .card.deploy code { font-family: var(--mono); color: var(--text-strong); }
-/* Sem contrato, o resto da página fica visível mas inerte. */
+/* Without a contract, the rest of the page stays visible but inert. */
 .layout.unconfigured .card:not(#card-deploy) { opacity: .4; pointer-events: none; }
 @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
 

@@ -1,8 +1,8 @@
 /**
- * Utilitários de decodificação para logs e recibos.
+ * Decoding utilities for logs and receipts.
  *
- * O nó da Klever devolve topics/data como hex ou base64 dependendo do endpoint,
- * então tentamos os dois e ficamos com o que vira texto imprimível.
+ * The Klever node returns topics/data as hex or base64 depending on the endpoint,
+ * so we try both and keep whichever becomes printable text.
  */
 
 const PRINTABLE = /^[\x20-\x7e]+$/
@@ -10,7 +10,7 @@ const HEX = /^(?:[0-9a-fA-F]{2})+$/
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/
 const TOKEN_ID = /^[A-Z0-9]{2,20}-[A-Z0-9]{4,8}$/
 
-/** Um id de KDA tem o formato `TICKER-XXXX`. */
+/** A KDA id has the format `TICKER-XXXX`. */
 export const looksLikeTokenId = (value: string): boolean => TOKEN_ID.test(value)
 
 function toText(value: string, encoding: 'hex' | 'base64'): string | null {
@@ -21,8 +21,8 @@ function toText(value: string, encoding: 'hex' | 'base64'): string | null {
 }
 
 /**
- * Tenta transformar um topic/data em texto legível.
- * Devolve null quando o conteúdo é binário (endereço, BigUint, u8 etc.).
+ * Tries to turn a topic/data into readable text.
+ * Returns null when the content is binary (address, BigUint, u8, etc.).
  */
 export function decodeLogPayload(value: string | undefined): string | null {
   if (!value) return null

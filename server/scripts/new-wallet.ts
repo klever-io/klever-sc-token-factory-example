@@ -1,14 +1,14 @@
 /**
- * Gera uma carteira nova para usar em testnet/devnet e grava o PEM.
+ * Generates a new wallet for use on testnet/devnet and writes the PEM.
  *
- * Uso: npm run wallet:new [-- caminho.pem] [--password senha]
- *   - sem argumentos grava em backend/wallet.pem (default de WALLET_PEM_PATH)
- *   - nunca sobrescreve um arquivo existente
- *   - com --password o PEM sai criptografado (AES-256-GCM), no mesmo formato
- *     que `loadPrivateKeyFromPemFile` do klever-connect lê
+ * Usage: npm run wallet:new [-- path.pem] [--password password]
+ *   - without arguments writes to backend/wallet.pem (default of WALLET_PEM_PATH)
+ *   - never overwrites an existing file
+ *   - with --password the PEM is written encrypted (AES-256-GCM), in the same format
+ *     that klever-connect's `loadPrivateKeyFromPemFile` reads
  *
- * Formato Klever (igual ao do koperator): base64 da string hex `privkey||pubkey`,
- * cabeçalho `PRIVATE KEY for <endereço>`.
+ * Klever format (same as koperator's): base64 of the hex string `privkey||pubkey`,
+ * header `PRIVATE KEY for <address>`.
  */
 import { createCipheriv, createHash, randomBytes } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
@@ -32,8 +32,8 @@ const keyBytes = Buffer.concat([privateKey.bytes, publicKey.bytes])
 const headers: string[] = []
 let body = keyBytes
 if (values.password) {
-  // Mesmo esquema do decryptPemBlock do klever-connect: chave = SHA-256(senha),
-  // dados = nonce(12) || ciphertext || tag(16).
+  // Same scheme as klever-connect's decryptPemBlock: key = SHA-256(password),
+  // data = nonce(12) || ciphertext || tag(16).
   const nonce = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', createHash('sha256').update(values.password).digest(), nonce)
   body = Buffer.concat([nonce, cipher.update(keyBytes), cipher.final(), cipher.getAuthTag()])
@@ -52,14 +52,14 @@ const pem = [
 writeFileSync(outPath, pem, { flag: 'wx', mode: 0o600 })
 
 console.log(`
-  Carteira gerada (use APENAS em testnet/devnet)
+  Wallet generated (use ONLY on testnet/devnet)
   ────────────────────────────────────────────────
-  endereço       ${address}
-  chave pública  ${publicKey.hex}
-  arquivo        ${outPath}${values.password ? ' (criptografado)' : ''}
+  address        ${address}
+  public key     ${publicKey.hex}
+  file           ${outPath}${values.password ? ' (encrypted)' : ''}
 
   No .env:
-  WALLET_PEM_PATH=${positionals[0] ?? './wallet.pem'}${values.password ? '\n  WALLET_PEM_PASSWORD=<a senha usada>' : ''}
+  WALLET_PEM_PATH=${positionals[0] ?? './wallet.pem'}${values.password ? '\n  WALLET_PEM_PASSWORD=<the password used>' : ''}
 
-  Faucet de testnet: https://testnet.kleverscan.org/faucet
+  Testnet faucet: https://testnet.kleverscan.org/faucet
 `)

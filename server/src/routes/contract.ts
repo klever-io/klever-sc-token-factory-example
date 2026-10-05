@@ -12,10 +12,10 @@ import * as factory from "../services/token-factory.js";
 export const contractRouter: Router = Router();
 
 /**
- * Estado geral do contrato — junta duas views numa chamada só.
+ * Overall contract state — combines two views in a single call.
  *
- * Sem contrato configurado responde `configured: false` com o que a página
- * precisa para oferecer o deploy (rede, signer, se o wasm existe).
+ * With no contract configured it responds `configured: false` with what the page
+ * needs to offer the deploy (network, signer, whether the wasm exists).
  */
 contractRouter.get(
   "/",
@@ -72,11 +72,11 @@ contractRouter.get(
 );
 
 /**
- * POST /api/contract/deploy — sobe um TokenFactory novo com a carteira do backend.
+ * POST /api/contract/deploy — deploys a new TokenFactory with the backend wallet.
  *
- * Só quando ainda não há contrato configurado: com CONTRACT_ADDRESS definido a
- * rota responde 409, para ninguém trocar o contrato em uso por um clique.
- * O endereço novo é gravado no .env para sobreviver a restarts.
+ * Only when no contract is configured yet: with CONTRACT_ADDRESS set the
+ * route responds 409, so nobody swaps the contract in use with one click.
+ * The new address is written to .env to survive restarts.
  */
 contractRouter.post(
   "/deploy",
@@ -85,7 +85,7 @@ contractRouter.post(
     if (contractAddress) {
       throw new HttpError(
         409,
-        `Já existe um contrato configurado (${contractAddress}). Remova CONTRACT_ADDRESS do .env para fazer outro deploy`,
+        `A contract is already configured (${contractAddress}). Remove CONTRACT_ADDRESS from .env to deploy another one`,
       );
     }
     res.json(jsonSafe(await deployContract()));
@@ -106,13 +106,13 @@ contractRouter.get(
   }),
 );
 
-/** Saldo da carteira do backend — útil para conferir se há KLV para as taxas. */
+/** Backend wallet balance — useful to check there is KLV for fees. */
 contractRouter.get(
   "/signer",
   asyncRoute(async (_req, res) => {
     const { wallet, provider } = getKlever();
     if (!wallet) {
-      res.status(503).json({ error: "Servidor em modo somente-leitura" });
+      res.status(503).json({ error: "Server in read-only mode" });
       return;
     }
     const account = await provider.getAccount(

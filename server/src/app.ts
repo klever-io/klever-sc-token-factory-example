@@ -29,20 +29,20 @@ export function createApp(): Express {
   app.use('/api/admin', adminRouter)
   app.use('/api/tx', transactionsRouter)
 
-  // Frontend estático (public/index.html) na raiz.
+  // Static frontend (public/index.html) at the root.
   app.use(express.static(fromPackageRoot('public')))
 
   app.use((_req, res) => {
-    res.status(404).json({ error: 'Rota não encontrada' })
+    res.status(404).json({ error: 'Route not found' })
   })
 
-  // Error handler: precisa dos 4 parâmetros para o Express reconhecê-lo.
+  // Error handler: needs all 4 parameters for Express to recognize it.
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const httpError: HttpError = toHttpError(err)
 
-    // 503 é condição esperada (sem carteira / sem contrato): não polui o log com stack.
+    // 503 is an expected condition (no wallet / no contract): keep stack traces out of the log.
     if (httpError.status >= 500 && httpError.status !== 503) {
-      console.error('[erro]', err)
+      console.error('[error]', err)
     }
 
     res.status(httpError.status).json({
