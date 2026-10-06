@@ -18,18 +18,18 @@ import * as factory from '../services/token-factory.js'
 
 export const tokensRouter: Router = Router()
 
-/** O corpo pode sobrepor o default do .env por requisição. */
+/** The body can override the .env default per request. */
 const shouldWait = (wait: boolean | undefined): boolean => wait ?? config.WAIT_FOR_TX
 
 /**
- * POST /api/tokens — emite um novo KDA.
+ * POST /api/tokens — issues a new KDA.
  *
- * Quantidades vêm em unidades mínimas: com precision 6, "1000000" = 1 token.
+ * Amounts come in minimum units: with precision 6, "1000000" = 1 token.
  */
 tokensRouter.post(
   '/',
   asyncRoute(async (req, res) => {
-    const body = parse(issueBody, req.body, 'corpo da requisição')
+    const body = parse(issueBody, req.body, 'request body')
 
     const result = await factory.issue(
       {
@@ -59,15 +59,15 @@ tokensRouter.post(
   }),
 )
 
-/** POST /api/tokens/burn — queima tokens enviados junto com a chamada.
+/** POST /api/tokens/burn — burns tokens sent along with the call.
  *
- * O tokenId vai no corpo, e não na URL, porque a queima é um pagamento anexado
- * à transação: `burnToken` é `#[payable("*")]` e não recebe argumentos.
+ * The tokenId goes in the body, not the URL, because burning is a payment attached
+ * to the transaction: `burnToken` is `#[payable("*")]` and takes no arguments.
  */
 tokensRouter.post(
   '/burn',
   asyncRoute(async (req, res) => {
-    const body = parse(burnBody, req.body, 'corpo da requisição')
+    const body = parse(burnBody, req.body, 'request body')
 
     const result = await factory.burnToken(
       body.tokenId,
@@ -87,12 +87,12 @@ tokensRouter.post(
   }),
 )
 
-/** POST /api/tokens/:tokenId/mint — minta supply adicional (só o criador). */
+/** POST /api/tokens/:tokenId/mint — mints additional supply (creator only). */
 tokensRouter.post(
   '/:tokenId/mint',
   asyncRoute(async (req, res) => {
     const id = parse(tokenIdSchema, req.params.tokenId, 'tokenId')
-    const body = parse(mintBody, req.body, 'corpo da requisição')
+    const body = parse(mintBody, req.body, 'request body')
 
     const result = await factory.mintToken(id, body.nonce, body.amount, shouldWait(body.wait))
 
@@ -103,14 +103,14 @@ tokensRouter.post(
 )
 
 /**
- * POST /api/tokens/:tokenId/transfer-ownership — passa a propriedade on-chain
- * do ativo para outro endereço. Irreversível: o contrato perde o controle.
+ * POST /api/tokens/:tokenId/transfer-ownership — transfers the on-chain ownership
+ * of the asset to another address. Irreversible: the contract loses control.
  */
 tokensRouter.post(
   '/:tokenId/transfer-ownership',
   asyncRoute(async (req, res) => {
     const id = parse(tokenIdSchema, req.params.tokenId, 'tokenId')
-    const body = parse(transferOwnershipBody, req.body, 'corpo da requisição')
+    const body = parse(transferOwnershipBody, req.body, 'request body')
 
     const result = await factory.transferTokenOwnership(id, body.newOwner, shouldWait(body.wait))
 
@@ -118,12 +118,12 @@ tokensRouter.post(
   }),
 )
 
-/** GET /api/tokens?creator=klv1…&offset=0&limit=20 — a paginação roda no contrato. */
+/** GET /api/tokens?creator=klv1…&offset=0&limit=20 — pagination runs in the contract. */
 tokensRouter.get(
   '/',
   asyncRoute(async (req, res) => {
     const creator = parse(kleverAddress, req.query.creator, 'creator')
-    const { offset, limit } = parse(paginationQuery, req.query, 'paginação')
+    const { offset, limit } = parse(paginationQuery, req.query, 'pagination')
 
     const [tokens, total] = await Promise.all([
       factory.getTokensByCreator(creator, offset, limit),
@@ -135,8 +135,8 @@ tokensRouter.get(
 )
 
 /**
- * GET /api/tokens/:tokenId — criador registrado no contrato + dados do ativo
- * (nome, precisão, supply, propriedades) vindos do indexer da rede.
+ * GET /api/tokens/:tokenId — creator registered in the contract + asset data
+ * (name, precision, supply, properties) coming from the network indexer.
  */
 tokensRouter.get(
   '/:tokenId',
@@ -145,7 +145,7 @@ tokensRouter.get(
     const [creator, asset] = await Promise.all([factory.getTokenCreator(id), getAssetInfo(id)])
 
     if (!creator && !asset) {
-      throw notFound(`Token ${id} não foi emitido por este contrato nem existe na rede`)
+      throw notFound(`Token ${id} was not issued by this contract and does not exist on the network`)
     }
 
     const { network } = getKlever()

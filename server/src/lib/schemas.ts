@@ -4,24 +4,24 @@ import { AssetType } from '../services/token-factory.js'
 
 export const kleverAddress = z
   .string()
-  .regex(/^klv1[0-9a-z]{38,}$/, 'endereço klv1 inválido')
+  .regex(/^klv1[0-9a-z]{38,}$/, 'invalid klv1 address')
 
 export const tokenId = z
   .string()
-  .regex(/^[A-Z0-9]{2,20}-[A-Z0-9]{4,8}$/, 'token id inválido (esperado TICKER-XXXX)')
+  .regex(/^[A-Z0-9]{2,20}-[A-Z0-9]{4,8}$/, 'invalid token id (expected TICKER-XXXX)')
 
 /**
- * Quantidades trafegam só como string em unidades mínimas. Números JSON acima de
- * Number.MAX_SAFE_INTEGER já chegam arredondados pelo JSON.parse, então são recusados.
+ * Amounts travel only as strings in minimum units. JSON numbers above
+ * Number.MAX_SAFE_INTEGER already arrive rounded by JSON.parse, so they are rejected.
  */
 export const amount = z
-  .string({ error: 'quantidade deve ser uma string decimal em unidades mínimas' })
-  .regex(/^\d+$/, 'quantidade deve ser um inteiro em unidades mínimas')
+  .string({ error: 'amount must be a decimal string in minimum units' })
+  .regex(/^\d+$/, 'amount must be an integer in minimum units')
   .transform((v) => BigInt(v))
 
 export const nonce = z.coerce.number().int().nonnegative().default(0)
 
-/** Espera (ou não) a confirmação on-chain; o default vem do .env. */
+/** Wait (or not) for on-chain confirmation; the default comes from .env. */
 export const waitFlag = z.boolean().optional()
 
 export const assetTypeInput = z
@@ -43,8 +43,8 @@ export const assetTypeInput = z
 export const issueBody = z
   .object({
     assetType: assetTypeInput.default(0),
-    name: z.string().min(1, 'nome obrigatório').max(32, 'nome com no máximo 32 bytes'),
-    ticker: z.string().min(1, 'ticker obrigatório').max(10, 'ticker com no máximo 10 bytes'),
+    name: z.string().min(1, 'name is required').max(32, 'name must be at most 32 bytes'),
+    ticker: z.string().min(1, 'ticker is required').max(10, 'ticker must be at most 10 bytes'),
     precision: z.coerce.number().int().min(0).max(18).default(6),
     initialSupply: amount.default(0n),
     maxSupply: amount.default(0n),
@@ -52,27 +52,27 @@ export const issueBody = z
   })
   .refine(
     (v) => v.maxSupply === 0n || v.maxSupply >= v.initialSupply,
-    { message: 'maxSupply deve ser 0 (ilimitado) ou >= initialSupply', path: ['maxSupply'] },
+    { message: 'maxSupply must be 0 (unlimited) or >= initialSupply', path: ['maxSupply'] },
   )
   .refine((v) => new TextEncoder().encode(v.name).length <= 32, {
-    message: 'nome excede 32 bytes em UTF-8',
+    message: 'name exceeds 32 bytes in UTF-8',
     path: ['name'],
   })
   .refine((v) => new TextEncoder().encode(v.ticker).length <= 10, {
-    message: 'ticker excede 10 bytes em UTF-8',
+    message: 'ticker exceeds 10 bytes in UTF-8',
     path: ['ticker'],
   })
 
 export const mintBody = z.object({
   nonce,
-  amount: amount.refine((v) => v > 0n, 'quantidade deve ser maior que zero'),
+  amount: amount.refine((v) => v > 0n, 'amount must be greater than zero'),
   wait: waitFlag,
 })
 
 export const burnBody = z.object({
   tokenId,
   nonce,
-  amount: amount.refine((v) => v > 0n, 'quantidade deve ser maior que zero'),
+  amount: amount.refine((v) => v > 0n, 'amount must be greater than zero'),
   wait: waitFlag,
 })
 

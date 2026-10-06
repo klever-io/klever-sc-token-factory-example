@@ -10,16 +10,16 @@ async function main(): Promise<void> {
     console.log(`
   TokenFactory backend
   ────────────────────────────────────────────────
-  rede       ${network.name} (chainId ${network.chainId})
+  network    ${network.name} (chainId ${network.chainId})
   node       ${network.config.node}
-  contrato   ${contractAddress ?? '— não configurado: faça o deploy pela página —'}
-  signer     ${wallet?.address ?? '— modo somente-leitura —'}
+  contract   ${contractAddress ?? '— not configured: deploy from the page —'}
+  signer     ${wallet?.address ?? '— read-only mode —'}
   http       http://${config.HOST}:${config.PORT}
 `)
   })
 
   const shutdown = (signal: string) => {
-    console.log(`\n${signal} recebido, encerrando…`)
+    console.log(`\n${signal} received, shutting down…`)
     server.close(() => process.exit(0))
   }
 
@@ -28,6 +28,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error('Falha ao iniciar o servidor:', err instanceof Error ? err.message : err)
+  console.error('Failed to start the server:', err instanceof Error ? err.message : err)
   process.exit(1)
 })

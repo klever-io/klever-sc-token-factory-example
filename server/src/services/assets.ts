@@ -1,10 +1,10 @@
 import { getKlever } from '../klever.js'
 
 /**
- * Dados on-chain de um KDA, vindos da API/indexer da rede configurada.
+ * On-chain data of a KDA, coming from the API/indexer of the configured network.
  *
- * O contrato só guarda o criador; nome, precisão, supply e propriedades
- * vivem no próprio ativo, e o indexer da Klever expõe isso em `/v1.0/assets/:id`.
+ * The contract only stores the creator; name, precision, supply and properties
+ * live on the asset itself, and the Klever indexer exposes them at `/v1.0/assets/:id`.
  */
 export interface AssetInfo {
   assetId: string
@@ -30,14 +30,14 @@ interface ApiAssetPayload {
 
 const str = (v: unknown): string => (v === undefined || v === null ? '' : String(v))
 
-/** Devolve null quando o indexer não conhece o ativo. */
+/** Returns null when the indexer does not know the asset. */
 export async function getAssetInfo(assetId: string): Promise<AssetInfo | null> {
   const { network } = getKlever()
   const url = `${network.config.api}/v1.0/assets/${encodeURIComponent(assetId)}`
 
   const res = await fetch(url)
   if (res.status === 404) return null
-  if (!res.ok) throw new Error(`Indexer respondeu ${res.status} para ${url}`)
+  if (!res.ok) throw new Error(`Indexer responded ${res.status} for ${url}`)
 
   const payload = (await res.json()) as ApiAssetPayload
   const a = payload.data?.asset

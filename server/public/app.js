@@ -1,10 +1,10 @@
-/* Frontend básico do TokenFactory: fala só com o backend em /api. */
+/* Basic TokenFactory frontend: talks only to the backend under /api. */
 
 const $ = (id) => document.getElementById(id)
 
 const state = {
   info: null, // GET /api/contract
-  kind: 'sft', // 'fungible' | 'nft' | 'sft' do token selecionado
+  kind: 'sft', // 'fungible' | 'nft' | 'sft' of the selected token
   creator: '',
   offset: 0,
   limit: 20,
@@ -12,7 +12,7 @@ const state = {
   token: null, // GET /api/tokens/:id
 }
 
-// ─── Utilidades ─────────────────────────────────────────────────────────────
+// ─── Utilities ─────────────────────────────────────────────────────────────
 
 async function api(path, options = {}) {
   const res = await fetch(path, {
@@ -31,17 +31,17 @@ async function api(path, options = {}) {
 
 const post = (path, data) => api(path, { method: 'POST', body: JSON.stringify(data ?? {}) })
 
-/** "1.5" com precision 6 → "1500000" (BigInt, sem float). */
+/** "1.5" with precision 6 → "1500000" (BigInt, no floats). */
 function toUnits(value, precision) {
   const text = String(value ?? '').trim().replace(',', '.')
   if (!text) return 0n
-  if (!/^\d+(\.\d+)?$/.test(text)) throw new Error(`Quantidade inválida: "${value}"`)
+  if (!/^\d+(\.\d+)?$/.test(text)) throw new Error(`Invalid amount: "${value}"`)
   const [whole, frac = ''] = text.split('.')
-  if (frac.length > precision) throw new Error(`No máximo ${precision} casas decimais`)
+  if (frac.length > precision) throw new Error(`At most ${precision} decimal places`)
   return BigInt(whole + frac.padEnd(precision, '0'))
 }
 
-/** "1500000" com precision 6 → "1.5". */
+/** "1500000" with precision 6 → "1.5". */
 function fromUnits(value, precision) {
   const s = BigInt(value ?? 0).toString().padStart(precision + 1, '0')
   const whole = s.slice(0, s.length - precision)
@@ -61,7 +61,7 @@ function toast(message, kind = '') {
   toastTimer = setTimeout(() => (el.hidden = true), 4500)
 }
 
-/** Executa uma ação de escrita com feedback, bloqueando botões enquanto roda. */
+/** Runs a write action with feedback, disabling buttons while it runs. */
 async function run(title, fn) {
   document.body.classList.add('busy')
   document.querySelectorAll('button').forEach((b) => (b.disabled = true))
@@ -82,13 +82,13 @@ async function run(title, fn) {
   }
 }
 
-// ─── Atividade ──────────────────────────────────────────────────────────────
+// ─── Activity ──────────────────────────────────────────────────────────────
 
 function logStart(title) {
   const list = $('activity')
   if (list.firstElementChild?.classList.contains('muted')) list.innerHTML = ''
   const li = document.createElement('li')
-  li.innerHTML = `<div class="head"><span class="title"></span><span class="pill">enviando…</span><span class="time"></span></div>`
+  li.innerHTML = `<div class="head"><span class="title"></span><span class="pill">sending…</span><span class="time"></span></div>`
   li.querySelector('.title').textContent = title
   li.querySelector('.time').textContent = new Date().toLocaleTimeString()
   list.prepend(li)
@@ -122,7 +122,7 @@ function logDone(li, result) {
 
 function logError(li, err) {
   const pill = li.querySelector('.pill')
-  pill.textContent = err.status ? `erro ${err.status}` : 'erro'
+  pill.textContent = err.status ? `error ${err.status}` : 'error'
   pill.className = 'pill bad'
   const div = document.createElement('div')
   div.className = 'err'
@@ -135,7 +135,7 @@ function logError(li, err) {
   }
 }
 
-// ─── Contrato ───────────────────────────────────────────────────────────────
+// ─── Contract ───────────────────────────────────────────────────────────────
 
 async function loadContract() {
   const info = await api('/api/contract')
@@ -149,9 +149,9 @@ async function loadContract() {
     a.target = '_blank'
     a.rel = 'noopener'
     a.textContent = info.address
-    line.append(a, ` · ${info.totalIssued} emitido(s)`)
+    line.append(a, ` · ${info.totalIssued} issued`)
   } else {
-    line.textContent = 'contrato não configurado'
+    line.textContent = 'contract not configured'
   }
   renderDeployCard(info)
 
@@ -159,16 +159,16 @@ async function loadContract() {
   net.textContent = `${info.network.name} · chain ${info.network.chainId}`
 
   const mode = $('pill-mode')
-  mode.textContent = info.signer ? `signer ${short(info.signer.address)}` : 'somente leitura'
+  mode.textContent = info.signer ? `signer ${short(info.signer.address)}` : 'read-only'
   mode.className = `pill ${info.signer ? 'ok' : 'warn'}`
-  mode.title = info.signer?.address ?? 'Configure WALLET_PEM_PATH para assinar'
+  mode.title = info.signer?.address ?? 'Set WALLET_PEM_PATH to sign'
 
   const paused = $('pill-paused')
   if (info.configured) {
-    paused.textContent = info.paused ? 'pausado' : 'ativo'
+    paused.textContent = info.paused ? 'paused' : 'active'
     paused.className = `pill ${info.paused ? 'bad' : 'ok'}`
   } else {
-    paused.textContent = 'sem contrato'
+    paused.textContent = 'no contract'
     paused.className = 'pill warn'
   }
 
@@ -179,7 +179,7 @@ async function loadContract() {
   return info
 }
 
-/** Mostra o card de deploy (e desativa o resto) enquanto não há contrato. */
+/** Shows the deploy card (and disables the rest) while there is no contract. */
 function renderDeployCard(info) {
   const card = $('card-deploy')
   card.hidden = info.configured
@@ -189,16 +189,16 @@ function renderDeployCard(info) {
   const btn = $('btn-deploy')
   const hint = $('deploy-hint')
   btn.disabled = !info.canDeploy
-  if (!info.signer) hint.textContent = 'Configure WALLET_PEM_PATH no .env: o deploy precisa de uma carteira para assinar.'
-  else if (!info.wasmAvailable) hint.textContent = 'Wasm não encontrado: rode o build do contrato (ksc all build) ou ajuste WASM_PATH.'
-  else hint.textContent = `Deployer: ${short(info.signer.address)} · rede ${info.network.name}. Custa a taxa de deploy em KLV.`
+  if (!info.signer) hint.textContent = 'Set WALLET_PEM_PATH in .env: deploying requires a wallet to sign.'
+  else if (!info.wasmAvailable) hint.textContent = 'Wasm not found: build the contract (ksc all build) or adjust WASM_PATH.'
+  else hint.textContent = `Deployer: ${short(info.signer.address)} · network ${info.network.name}. Costs the deploy fee in KLV.`
 }
 
-// ─── Lista ──────────────────────────────────────────────────────────────────
+// ─── List ──────────────────────────────────────────────────────────────────
 
 async function loadTokens() {
   const creator = $('list-creator').value.trim()
-  if (!creator) return toast('Informe o endereço do criador', 'error')
+  if (!creator) return toast('Enter the creator address', 'error')
   if (creator !== state.creator) state.offset = 0
   state.creator = creator
 
@@ -209,7 +209,7 @@ async function loadTokens() {
   const list = $('token-list')
   list.innerHTML = ''
   if (!data.tokens.length) {
-    list.innerHTML = '<li class="muted">Nenhum token deste criador.</li>'
+    list.innerHTML = '<li class="muted">No tokens from this creator.</li>'
   }
   for (const id of data.tokens) {
     const li = document.createElement('li')
@@ -219,7 +219,7 @@ async function loadTokens() {
     li.addEventListener('click', () => loadToken(id))
     list.append(li)
   }
-  $('list-count').textContent = `${data.total} no total · ${state.offset + 1}–${state.offset + data.tokens.length}`
+  $('list-count').textContent = `${data.total} total · ${state.offset + 1}–${state.offset + data.tokens.length}`
   updatePager()
 }
 
@@ -252,11 +252,11 @@ async function loadToken(id) {
   const a = data.asset
   const p = a?.precision ?? 0
 
-  // Campos de mint/burn dependem do tipo do ativo:
-  //  - fungível: só quantidade.
-  //  - NFT: mint recebe só quantidade (a chain gera os nonces); burn recebe só o nonce,
-  //    já que cada NFT é único e a quantidade é sempre 1.
-  //  - SFT: quantidade + nonce nos dois (qual edição mintar/queimar).
+  // Mint/burn fields depend on the asset type:
+  //  - fungible: amount only.
+  //  - NFT: mint takes only an amount (the chain generates the nonces); burn takes only the nonce,
+  //    since each NFT is unique and the amount is always 1.
+  //  - SFT: amount + nonce on both (which edition to mint/burn).
   state.kind = tokenKind(a)
   const isSft = state.kind === 'sft'
   const isNft = state.kind === 'nft'
@@ -269,19 +269,19 @@ async function loadToken(id) {
   toggle('mint-nonce', isSft, { reset: '0' })
   toggle('burn-amount', !isNft, { reset: '' })
   toggle('burn-nonce', isSft || isNft, { reset: '0' })
-  $('mint-amount').placeholder = isNft ? `quantidade (máx ${MAX_NFT_MINT_BATCH} por tx)` : 'quantidade (ex: 100)'
+  $('mint-amount').placeholder = isNft ? `amount (max ${MAX_NFT_MINT_BATCH} per tx)` : 'amount (e.g. 100)'
 
   const fields = [
-    ['Nome', a?.name ?? '—'],
-    ['Tipo', a?.assetType ?? '—'],
-    ['Precisão', a ? String(p) : '—'],
-    ['Criador (contrato)', data.creator ?? 'não registrado (propriedade transferida?)', 'mono'],
-    ['Dono on-chain', a?.ownerAddress ?? '—', 'mono'],
-    ['Supply circulante', a ? fromUnits(a.circulatingSupply, p) : '—'],
-    ['Supply inicial', a ? fromUnits(a.initialSupply, p) : '—'],
-    ['Supply máximo', a ? (a.maxSupply === '0' ? 'ilimitado' : fromUnits(a.maxSupply, p)) : '—'],
-    ['Mintado / queimado', a ? `${fromUnits(a.mintedValue, p)} / ${fromUnits(a.burnedValue, p)}` : '—'],
-    ['Emitido em', a?.issueDate ? new Date(a.issueDate * 1000).toLocaleString() : '—'],
+    ['Name', a?.name ?? '—'],
+    ['Type', a?.assetType ?? '—'],
+    ['Precision', a ? String(p) : '—'],
+    ['Creator (contract)', data.creator ?? 'not registered (ownership transferred?)', 'mono'],
+    ['On-chain owner', a?.ownerAddress ?? '—', 'mono'],
+    ['Circulating supply', a ? fromUnits(a.circulatingSupply, p) : '—'],
+    ['Initial supply', a ? fromUnits(a.initialSupply, p) : '—'],
+    ['Max supply', a ? (a.maxSupply === '0' ? 'unlimited' : fromUnits(a.maxSupply, p)) : '—'],
+    ['Minted / burned', a ? `${fromUnits(a.mintedValue, p)} / ${fromUnits(a.burnedValue, p)}` : '—'],
+    ['Issued at', a?.issueDate ? new Date(a.issueDate * 1000).toLocaleString() : '—'],
   ]
   const dl = $('token-fields')
   dl.innerHTML = ''
@@ -295,7 +295,7 @@ async function loadToken(id) {
   }
   if (a?.properties) {
     const dt = document.createElement('dt')
-    dt.textContent = 'Propriedades'
+    dt.textContent = 'Properties'
     const dd = document.createElement('dd')
     dd.className = 'props'
     for (const [k, v] of Object.entries(a.properties)) {
@@ -315,10 +315,10 @@ async function loadToken(id) {
 
 const precisionOfCurrent = () => state.token?.asset?.precision ?? 0
 
-/** Parâmetro de rede `MaxNFTMintBatch`: NFTs por transação de mint (50 na testnet/mainnet). */
+/** Network parameter `MaxNFTMintBatch`: NFTs per mint transaction (50 on testnet/mainnet). */
 const MAX_NFT_MINT_BATCH = 50
 
-/** 'fungible' | 'nft' | 'sft'. Sem dados do ativo assume SFT, o caso que mostra todos os campos. */
+/** 'fungible' | 'nft' | 'sft'. Without asset data it assumes SFT, the case that shows all fields. */
 function tokenKind(asset) {
   const type = asset?.assetType ?? ''
   if (/^fungible$/i.test(type)) return 'fungible'
@@ -333,7 +333,7 @@ async function refreshAfterWrite() {
   if (state.token) await loadToken(state.token.tokenId)
 }
 
-// ─── Eventos de UI ──────────────────────────────────────────────────────────
+// ─── UI events ──────────────────────────────────────────────────────────
 
 $('form-list').addEventListener('submit', (e) => {
   e.preventDefault()
@@ -376,7 +376,7 @@ $('form-issue').addEventListener('submit', async (e) => {
   } catch (err) {
     return toast(err.message, 'error')
   }
-  const result = await run(`Emitir ${body.ticker}`, () => post('/api/tokens', body)).catch(() => null)
+  const result = await run(`Issue ${body.ticker}`, () => post('/api/tokens', body)).catch(() => null)
   if (!result) return
   $('form-issue').reset()
   $('issue-precision').value = '6'
@@ -394,7 +394,7 @@ $('form-mint').addEventListener('submit', async (e) => {
     return toast(err.message, 'error')
   }
   if (state.kind === 'nft' && amount > BigInt(MAX_NFT_MINT_BATCH)) {
-    return toast(`A rede limita o mint a ${MAX_NFT_MINT_BATCH} NFTs por transação`, 'error')
+    return toast(`The network limits minting to ${MAX_NFT_MINT_BATCH} NFTs per transaction`, 'error')
   }
   const body = { amount: amount.toString(), nonce: Number($('mint-nonce').value || 0) }
   const ok = await run(`Mint ${$('mint-amount').value} ${id}`, () =>
@@ -411,10 +411,10 @@ $('form-burn').addEventListener('submit', async (e) => {
   const id = state.token.tokenId
   const isNft = state.kind === 'nft'
   const nonce = Number($('burn-nonce').value || 0)
-  if (isNft && nonce <= 0) return toast('Informe o nonce do NFT a queimar', 'error')
+  if (isNft && nonce <= 0) return toast('Enter the nonce of the NFT to burn', 'error')
   let amount
   try {
-    // NFT é único: queima sempre 1 unidade do nonce informado.
+    // An NFT is unique: always burns 1 unit of the given nonce.
     amount = isNft ? 1n : toUnits($('burn-amount').value, precisionOfCurrent())
   } catch (err) {
     return toast(err.message, 'error')
@@ -433,8 +433,8 @@ $('form-transfer').addEventListener('submit', async (e) => {
   e.preventDefault()
   const id = state.token.tokenId
   const newOwner = $('transfer-owner').value.trim()
-  if (!window.confirm(`Transferir a propriedade de ${id} para\n${newOwner}?\n\nIsso é irreversível.`)) return
-  const ok = await run(`Transferir ${id}`, () =>
+  if (!window.confirm(`Transfer ownership of ${id} to\n${newOwner}?\n\nThis is irreversible.`)) return
+  const ok = await run(`Transfer ${id}`, () =>
     post(`/api/tokens/${encodeURIComponent(id)}/transfer-ownership`, { newOwner }),
   ).catch(() => null)
   if (ok) {
@@ -444,30 +444,30 @@ $('form-transfer').addEventListener('submit', async (e) => {
 })
 
 $('btn-deploy').addEventListener('click', async () => {
-  const ok = await run('Deploy do TokenFactory', () => post('/api/contract/deploy')).catch(() => null)
+  const ok = await run('Deploy TokenFactory', () => post('/api/contract/deploy')).catch(() => null)
   if (!ok) return
-  toast(ok.persisted ? `Contrato ${short(ok.address)} gravado no .env` : `Contrato ${ok.address} (não gravado no .env)`, ok.persisted ? 'ok' : 'error')
+  toast(ok.persisted ? `Contract ${short(ok.address)} written to .env` : `Contract ${ok.address} (not written to .env)`, ok.persisted ? 'ok' : 'error')
   await loadContract()
   if (state.creator) await loadTokens().catch(() => {})
 })
 
 $('btn-pause').addEventListener('click', async () => {
-  const ok = await run('Pausar contrato', () => post('/api/admin/pause')).catch(() => null)
+  const ok = await run('Pause contract', () => post('/api/admin/pause')).catch(() => null)
   if (ok) await loadContract()
 })
 $('btn-unpause').addEventListener('click', async () => {
-  const ok = await run('Despausar contrato', () => post('/api/admin/unpause')).catch(() => null)
+  const ok = await run('Unpause contract', () => post('/api/admin/unpause')).catch(() => null)
   if (ok) await loadContract()
 })
 $('form-name').addEventListener('submit', async (e) => {
   e.preventDefault()
   const name = $('admin-name').value.trim()
-  const ok = await run(`Renomear contrato`, () => post('/api/admin/name', { name })).catch(() => null)
+  const ok = await run(`Rename contract`, () => post('/api/admin/name', { name })).catch(() => null)
   if (ok) $('admin-name').value = ''
 })
 
 $('btn-clear').addEventListener('click', () => {
-  $('activity').innerHTML = '<li class="muted">Nenhuma transação ainda.</li>'
+  $('activity').innerHTML = '<li class="muted">No transactions yet.</li>'
 })
 
 // ─── Boot ───────────────────────────────────────────────────────────────────
@@ -477,6 +477,6 @@ $('btn-clear').addEventListener('click', () => {
     const info = await loadContract()
     if (info.configured && state.creator) await loadTokens()
   } catch (err) {
-    toast(`Backend indisponível: ${err.message}`, 'error')
+    toast(`Backend unavailable: ${err.message}`, 'error')
   }
 })()

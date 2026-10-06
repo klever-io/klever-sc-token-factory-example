@@ -1,4 +1,4 @@
-/** Erro de aplicação com status HTTP associado. */
+/** Application error with an associated HTTP status. */
 export class HttpError extends Error {
   constructor(
     readonly status: number,
@@ -15,17 +15,17 @@ export const notFound = (message: string) => new HttpError(404, message)
 export const unavailable = (message: string) => new HttpError(503, message)
 
 /**
- * Traduz erros de `require!` do contrato para uma mensagem legível.
+ * Translates contract `require!` errors into a readable message.
  *
- * O nó devolve a mensagem do panic dentro do texto do erro; aqui só garantimos
- * que ela chegue no corpo da resposta em vez de virar um 500 genérico.
+ * The node returns the panic message inside the error text; here we only ensure
+ * it reaches the response body instead of becoming a generic 500.
  */
 export function toHttpError(err: unknown): HttpError {
   if (err instanceof HttpError) return err
 
   const message = err instanceof Error ? err.message : String(err)
 
-  // Reverts do contrato: mensagens vindas de require!/sc_panic!
+  // Contract reverts: messages coming from require!/sc_panic!
   const contractRequire = [
     'Contract is paused',
     'Name cannot be empty',
@@ -46,17 +46,17 @@ export function toHttpError(err: unknown): HttpError {
 
   if (contractRequire) return new HttpError(400, contractRequire, { raw: message })
 
-  // Query num endereço que não hospeda o TokenFactory (ou contrato não deployado).
+  // Query on an address that does not host the TokenFactory (or contract not deployed).
   if (message.includes('does not exist in container') || message.includes('invalid contract')) {
     return new HttpError(
       502,
-      'Nenhum TokenFactory respondeu nesse endereço — confira CONTRACT_ADDRESS e a rede',
+      'No TokenFactory responded at that address — check CONTRACT_ADDRESS and the network',
       { raw: message },
     )
   }
 
   if (message.includes('Transaction not found') || message.includes('cannot find transaction')) {
-    return new HttpError(404, 'Transação não encontrada')
+    return new HttpError(404, 'Transaction not found')
   }
 
   return new HttpError(500, message)

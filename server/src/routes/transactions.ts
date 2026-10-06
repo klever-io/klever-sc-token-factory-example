@@ -10,14 +10,14 @@ import * as factory from '../services/token-factory.js'
 export const transactionsRouter: Router = Router()
 
 const assertHash = (hash: unknown): string => {
-  if (typeof hash !== 'string') throw badRequest('hash inválido')
+  if (typeof hash !== 'string') throw badRequest('invalid hash')
   if (!hash || !/^[0-9a-fA-F]{64}$/.test(hash)) {
-    throw badRequest('hash deve ter 64 caracteres hexadecimais')
+    throw badRequest('hash must be 64 hexadecimal characters')
   }
   return hash
 }
 
-/** GET /api/tx/:hash — status da transação + eventos decodificados do contrato. */
+/** GET /api/tx/:hash — transaction status + decoded contract events. */
 transactionsRouter.get(
   '/:hash',
   asyncRoute(async (req, res) => {
@@ -25,7 +25,7 @@ transactionsRouter.get(
     const { provider } = getKlever()
 
     const tx = await provider.getTransaction(createTransactionHash(hash))
-    if (!tx) throw notFound(`Transação ${hash} não encontrada`)
+    if (!tx) throw notFound(`Transaction ${hash} not found`)
 
     res.json(
       jsonSafe({

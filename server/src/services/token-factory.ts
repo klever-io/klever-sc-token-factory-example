@@ -1,6 +1,6 @@
 import { createTransactionHash } from '@klever/connect'
 import type { Contract } from '@klever/connect'
-// Tipos de transação vivem no pacote de provider; o índice unificado não os reexporta.
+// Transaction types live in the provider package; the unified index does not re-export them.
 import type {
   ILogEvent,
   IReceipt,
@@ -13,14 +13,14 @@ import { HttpError, notFound, unavailable } from '../lib/errors.js'
 import { decodeLogPayload, looksLikeTokenId } from '../lib/decode.js'
 
 /**
- * Camada tipada sobre o `Contract` do klever-connect.
+ * Typed layer over klever-connect's `Contract`.
  *
- * O klever-connect gera métodos dinâmicos a partir do ABI (`contract.issue(...)`),
- * mas para o TypeScript eles são `unknown`. Aqui usamos `call()` (views) e
- * `invoke()` (transações), que são tipados, e devolvemos tipos concretos.
+ * klever-connect generates dynamic methods from the ABI (`contract.issue(...)`),
+ * but to TypeScript they are `unknown`. Here we use `call()` (views) and
+ * `invoke()` (transactions), which are typed, and return concrete types.
  */
 
-/** 0=Fungible, 1=NFT, 2=SemiFungible — igual ao enum AssetType do contrato. */
+/** 0=Fungible, 1=NFT, 2=SemiFungible — same as the contract's AssetType enum. */
 export const AssetType = {
   Fungible: 0,
   NFT: 1,
@@ -37,9 +37,9 @@ export interface TxResult {
   hash: string
   status: string
   explorerUrl: string
-  /** Só quando a chamada esperou a confirmação on-chain. */
+  /** Only when the call waited for on-chain confirmation. */
   transaction?: ITransactionResponse
-  /** Preenchido pelo `issue`: id do KDA recém-criado (ex.: `MYTK-4A2B`). */
+  /** Filled in by `issue`: id of the newly created KDA (e.g. `MYTK-4A2B`). */
   tokenId?: string
 }
 
@@ -48,9 +48,9 @@ export interface IssueParams {
   name: string
   ticker: string
   precision: number
-  /** Em unidades mínimas (já multiplicado pela precisão). */
+  /** In minimum units (already multiplied by the precision). */
   initialSupply: bigint
-  /** Em unidades mínimas. 0 = ilimitado. */
+  /** In minimum units. 0 = unlimited. */
   maxSupply: bigint
 }
 
@@ -62,27 +62,27 @@ function requireSigner(): Contract {
   const { wallet } = getKlever()
   if (!wallet) {
     throw unavailable(
-      'Servidor em modo somente-leitura: configure WALLET_PEM_PATH para enviar transações',
+      'Server in read-only mode: set WALLET_PEM_PATH to send transactions',
     )
   }
   return contract()
 }
 
-/** `bytes` no ABI precisa chegar como Uint8Array; strings viram UTF-8. */
+/** `bytes` in the ABI must arrive as Uint8Array; strings become UTF-8. */
 const utf8 = (value: string): Uint8Array => new TextEncoder().encode(value)
 
-/** Normaliza o retorno de um `variadic<T>`: 0 itens → [], 1 item → valor solto. */
+/** Normalizes the return of a `variadic<T>`: 0 items → [], 1 item → bare value. */
 function toArray<T>(value: unknown): T[] {
   if (value === undefined || value === null || value === '') return []
   return (Array.isArray(value) ? value : [value]) as T[]
 }
 
 // =============================================================================
-// Views (queryContract — sem taxa, sem transação)
+// Views (queryContract — no fee, no transaction)
 // =============================================================================
 
 export async function isPaused(): Promise<boolean> {
-  // `bool` false vem como bytes vazios do nó; o decoder pode entregar '' ou '00'.
+  // `bool` false comes back from the node as empty bytes; the decoder may yield '' or '00'.
   const raw = await contract().call<unknown>('isPaused')
   return raw === true || raw === 1 || raw === '1' || raw === '01' || raw === 'true'
 }
@@ -104,18 +104,18 @@ export async function getCreatorTokenCount(creator: string): Promise<number> {
 }
 
 /**
- * Criador registrado de um token, ou null.
+ * Creator registered for a token, or null.
  *
- * O storage vazio não é um erro no contrato: a view devolve bytes vazios, que o
- * decoder do klever-connect entrega como string vazia.
+ * Empty storage is not an error in the contract: the view returns empty bytes, which the
+ * klever-connect decoder delivers as an empty string.
  */
 export async function getTokenCreator(tokenId: string): Promise<string | null> {
   let creator: unknown
   try {
     creator = await contract().call<unknown>('getTokenCreator', tokenId)
   } catch (err) {
-    // Storage vazio de um `SingleValueMapper<ManagedAddress>`: alguns nós
-    // devolvem bytes vazios, outros falham ao decodificar 0 bytes como endereço.
+    // Empty storage of a `SingleValueMapper<ManagedAddress>`: some nodes
+    // return empty bytes, others fail to decode 0 bytes as an address.
     const message = err instanceof Error ? err.message : String(err)
     if (/storage decode error|bad array length/i.test(message)) return null
     throw err
@@ -124,12 +124,12 @@ export async function getTokenCreator(tokenId: string): Promise<string | null> {
 }
 
 // =============================================================================
-// Transações (invoke — assinadas pela carteira do servidor)
+// Transactions (invoke — signed by the server wallet)
 // =============================================================================
 
 /**
- * Emite um novo token KDA. O contrato fica dono on-chain do ativo, e o supply
- * inicial (só Fungible) vai para quem chamou — aqui, a carteira do backend.
+ * Issues a new KDA token. The contract becomes the on-chain owner of the asset, and the
+ * initial supply (Fungible only) goes to the caller — here, the backend wallet.
  */
 export async function issue(params: IssueParams, wait: boolean): Promise<TxResult> {
   const result = await requireSigner().invoke(
@@ -147,7 +147,7 @@ export async function issue(params: IssueParams, wait: boolean): Promise<TxResul
   return tokenId ? { ...tx, tokenId } : tx
 }
 
-/** Minta supply adicional. Só o criador registrado no contrato consegue. */
+/** Mints additional supply. Only the creator registered in the contract can. */
 export async function mintToken(
   tokenId: string,
   nonce: number,
@@ -158,8 +158,8 @@ export async function mintToken(
 }
 
 /**
- * Queima tokens. `burnToken` é `#[payable("*")]` e não recebe argumentos: o valor
- * viaja como callValue da chamada, e o contrato lê o pagamento que recebeu.
+ * Burns tokens. `burnToken` is `#[payable("*")]` and takes no arguments: the amount
+ * travels as the call's callValue, and the contract reads the payment it received.
  */
 export async function burnToken(
   tokenId: string,
@@ -167,12 +167,12 @@ export async function burnToken(
   amount: bigint,
   wait: boolean,
 ): Promise<TxResult> {
-  // KDAs com nonce (NFT/SFT) são identificados como `TICKER-XXXX/nonce`.
+  // KDAs with a nonce (NFT/SFT) are identified as `TICKER-XXXX/nonce`.
   const assetId = nonce > 0 ? `${tokenId}/${nonce}` : tokenId
   return settle(await requireSigner().invoke('burnToken', { value: { [assetId]: amount } }), wait)
 }
 
-/** Transfere a propriedade on-chain do ativo. Irreversível: o contrato perde o controle. */
+/** Transfers the on-chain ownership of the asset. Irreversible: the contract loses control. */
 export async function transferTokenOwnership(
   tokenId: string,
   newOwner: string,
@@ -182,7 +182,7 @@ export async function transferTokenOwnership(
 }
 
 // =============================================================================
-// Admin (only_owner — a carteira do backend precisa ser a dona do contrato)
+// Admin (only_owner — the backend wallet must be the contract owner)
 // =============================================================================
 
 export async function pause(wait: boolean): Promise<TxResult> {
@@ -198,24 +198,24 @@ export async function changeContractName(name: string, wait: boolean): Promise<T
 }
 
 // =============================================================================
-// Eventos
+// Events
 // =============================================================================
 
 export interface DecodedEvent {
   identifier: string
   address: string
   topics: string[]
-  /** Topics decodificados como texto quando são legíveis (token id, nome, ticker). */
+  /** Topics decoded as text when readable (token id, name, ticker). */
   decodedTopics: string[]
   data: string[]
 }
 
 /**
- * Extrai os eventos emitidos pelo TokenFactory nos logs de uma transação.
+ * Extracts the events emitted by the TokenFactory from a transaction's logs.
  *
- * `parseEvents` (do klever-connect) filtra os logs pelo endereço do contrato; a
- * decodificação dos topics fica por nossa conta porque o TokenFactory indexa
- * tipos mistos (endereço, token id, u8, bytes, BigUint).
+ * `parseEvents` (from klever-connect) filters the logs by contract address;
+ * decoding the topics is left to us because the TokenFactory indexes
+ * mixed types (address, token id, u8, bytes, BigUint).
  */
 export function decodeEvents(receipt: ITransactionResponse): DecodedEvent[] {
   const { contract: c, contractAddress } = requireContract()
@@ -229,16 +229,16 @@ export function decodeEvents(receipt: ITransactionResponse): DecodedEvent[] {
   }))
 }
 
-/** Busca a transação na rede e devolve seus eventos de contrato. */
+/** Fetches the transaction from the network and returns its contract events. */
 export async function getContractEvents(hash: string): Promise<DecodedEvent[]> {
   const { provider } = getKlever()
   const tx = await provider.getTransaction(createTransactionHash(hash))
-  if (!tx) throw notFound(`Transação ${hash} não encontrada`)
+  if (!tx) throw notFound(`Transaction ${hash} not found`)
   return decodeEvents(tx)
 }
 
 // =============================================================================
-// Resposta compacta de transação
+// Compact transaction response
 // =============================================================================
 
 export interface TxSummary {
@@ -252,8 +252,8 @@ export interface TxSummary {
 }
 
 /**
- * Versão enxuta do resultado para a resposta HTTP: o recibo bruto da rede é
- * grande e a maior parte não interessa a quem chamou a API.
+ * Slimmed-down version of the result for the HTTP response: the raw network receipt is
+ * large and most of it is irrelevant to the API caller.
  */
 export function summarize(tx: TxResult): TxSummary {
   const summary: TxSummary = {
@@ -272,10 +272,10 @@ export function summarize(tx: TxResult): TxSummary {
 }
 
 // =============================================================================
-// Helpers de transação
+// Transaction helpers
 // =============================================================================
 
-/** Aguarda a confirmação quando `wait` é true; devolve hash + status em qualquer caso. */
+/** Waits for confirmation when `wait` is true; returns hash + status in any case. */
 async function settle(result: TransactionSubmitResult, wait: boolean): Promise<TxResult> {
   const hash = String(result.hash)
   const explorerUrl = getKlever().provider.getTransactionUrl(hash)
@@ -286,15 +286,15 @@ async function settle(result: TransactionSubmitResult, wait: boolean): Promise<T
 
   const receipt = await result.wait()
 
-  // O nó aceita o broadcast antes de executar o contrato: um `require!` que
-  // falhou só aparece aqui, no status/logs da transação minerada.
+  // The node accepts the broadcast before executing the contract: a `require!` that
+  // failed only shows up here, in the mined transaction's status/logs.
   const failure = contractFailureMessage(receipt)
   if (failure) throw new HttpError(400, failure, { hash, explorerUrl })
 
   return { hash, status: String(receipt.status), explorerUrl, transaction: receipt }
 }
 
-/** Devolve a mensagem de reverte do contrato, ou null se a transação passou. */
+/** Returns the contract's revert message, or null if the transaction passed. */
 function contractFailureMessage(receipt: ITransactionResponse): string | null {
   const signalError = receipt.logs?.events?.find((e: ILogEvent) => e.identifier === 'signalError')
 
@@ -302,24 +302,24 @@ function contractFailureMessage(receipt: ITransactionResponse): string | null {
     const payload = [...(signalError.data ?? []), ...(signalError.topics ?? [])]
       .map(decodeLogPayload)
       .find((text): text is string => Boolean(text))
-    return payload ?? 'Transação revertida pelo contrato'
+    return payload ?? 'Transaction reverted by the contract'
   }
 
   const status = String(receipt.status)
   if (status === 'fail' || status === 'failed' || status === 'invalid') {
-    return `Transação falhou (status: ${status}, resultCode: ${receipt.resultCode ?? 'n/d'})`
+    return `Transaction failed (status: ${status}, resultCode: ${receipt.resultCode ?? 'n/a'})`
   }
 
   return null
 }
 
 /**
- * Extrai o id do KDA criado por `issue`.
+ * Extracts the id of the KDA created by `issue`.
  *
- * Fontes, nessa ordem: o returnData do recibo de smart contract (tipo 21), o
- * evento `tokenIssued` e o evento `ReturnData` da VM. Nos logs da Klever o
- * `identifier` de um evento de contrato é o endpoint chamado (`issue`) e o nome
- * do evento (`tokenIssued`) vai no primeiro topic.
+ * Sources, in this order: the returnData of the smart contract receipt (type 21), the
+ * `tokenIssued` event and the VM's `ReturnData` event. In Klever logs the
+ * `identifier` of a contract event is the called endpoint (`issue`) and the name
+ * of the event (`tokenIssued`) goes in the first topic.
  */
 export function extractIssuedTokenId(receipt: ITransactionResponse): string | undefined {
   const scReceipt = receipt.receipts?.find(
